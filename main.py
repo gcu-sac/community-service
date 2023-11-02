@@ -57,12 +57,27 @@ def check_write(request: Request):
 @app.get("/read")
 def read(request: Request):
 	idx = request.query_params.get("idx")
-	data_list = select(f"SELECT * FROM board WHERE idx={idx}")
+	data = select(f"SELECT * FROM board WHERE idx={idx}")
+	data = data[0]
 	update(f"UPDATE board SET hit = hit+1 WHERE idx = {idx}")
-	return templates.TemplateResponse('./noticeboard/read.html', context={"request":request, "data_list":data_list})
+	
+	return templates.TemplateResponse('./noticeboard/read.html', context={"request":request,
+																		#   "name" : data.name,
+																		  "title" : data['title'],
+																		  "content" : data['content'],
+																		  "date" : data['date'],
+																		  "hit" : data['hit']})
 
 @app.get("/delete")
 def delete(request: Request):
 	idx = request.query_params.get("idx")
 	update(f"UPDATE board SET is_delete = 1 WHERE idx = {idx}")
 	return RedirectResponse(url="/")
+
+@app.get("/reply")
+def delete(request: Request):
+	idx = request.query_params.get("idx")
+	name = request.query_params.get("name")
+	content = request.query_params.get("content")
+	insert(f"INSERT board SET is_delete = 1 WHERE idx = {idx}")
+	return RedirectResponse(url="/read?idx="+idx)
