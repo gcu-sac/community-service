@@ -60,13 +60,12 @@ def read(request: Request):
 	data = select(f"SELECT * FROM board WHERE idx={idx}")
 	data = data[0]
 	update(f"UPDATE board SET hit = hit+1 WHERE idx = {idx}")
+
+	reply_list = select(f"SELECT * FROM reply WHERE bidx={idx}")
 	
 	return templates.TemplateResponse('./noticeboard/read.html', context={"request":request,
-																		#   "name" : data.name,
-																		  "title" : data['title'],
-																		  "content" : data['content'],
-																		  "date" : data['date'],
-																		  "hit" : data['hit']})
+																"idx" : data['idx'], "name" : data['name'], "title" : data['title'],"content" : data['content'], "date" : data['date'], "hit" : data['hit'],
+																"reply_list" : reply_list})
 
 @app.get("/delete")
 def delete(request: Request):
@@ -79,5 +78,7 @@ def delete(request: Request):
 	idx = request.query_params.get("idx")
 	name = request.query_params.get("name")
 	content = request.query_params.get("content")
-	insert(f"INSERT board SET is_delete = 1 WHERE idx = {idx}")
-	return RedirectResponse(url="/read?idx="+idx)
+	current_time = datetime.now()
+
+	insert(f"INSERT INTO reply (bidx, name, content, date) VALUES({idx}, '{name}', '{content}', '{current_time}')")
+	return RedirectResponse(url="/read?idx=" + idx)

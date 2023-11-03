@@ -78,7 +78,7 @@
 		<h2 class="title">{{title}}</h2>
 		<hr>
 			<div id="user_info">
-				<h3 class="writer"></h3>
+				<h3 class="writer">{{ name }}</h3>
 				<p class="date_hit"></p>시간 : {{date}} 조회:{{hit}}</p>
 			</div>
 			<div id="content">{{content}}</div>
@@ -94,27 +94,28 @@
 		</ul>
 	</div>
 
-	<!-- 댓글 불러오기 -->
-	<div class="reply_view">
-			<div class="dap_lo">
-				<div class="rep_me dap_to">!날짜</div>
-				<b>!id</b>
-				<div class="dap_to comt_edit">!content</div>
-				<div class="rep_me rep_menu"></div>
+	<!-- 댓글 입력 폼 -->
+	<div class="dap_ins">
+		<form action="/reply" method="GET">
+			<input type="hidden" name="idx" value="{{idx}}">
+			<input type="text" name="name" placeholder="name">
+			<div style="margin-top:10px; ">
+				<textarea name="content" class="reply_content" id="re_content" ></textarea>
+				<button id="rep_bt" class="re_bt">댓글 작성</button>
 			</div>
-
-		<!-- 댓글 입력 폼 -->
-		<div class="dap_ins">
-			<form action="/reply" method="GET">
-				<input type="hidden" name="idx" value="{{idx}}">
-				<input type="text" name="name" placeholder="name">
-				<div style="margin-top:10px; ">
-					<textarea name="content" class="reply_content" id="re_content" ></textarea>
-					<button id="rep_bt" class="re_bt">댓글 작성</button>
-				</div>
-			</form>
+		</form>
+	</div>
+	<!-- 댓글 불러오기 -->
+	{% for reply in reply_list %}
+	<div class="reply_view">
+		<div class="dap_lo">
+			<div class="rep_me dap_to">{{ reply.date }}</div>
+			<b>{{ reply.name }}</b>
+			<div class="dap_to comt_edit">{{ reply.content }}</div>
+			<div class="rep_me rep_menu"></div>
 		</div>
 	</div>
+	{% endfor %}
 <div id="foot_box"></div>
 </div>
 </body>
