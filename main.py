@@ -8,77 +8,139 @@ import db_info
 app = FastAPI()
 templates = Jinja2Templates(directory='./')
 
-# MySQL 연결 설정
-# db = mysql.connector.connect(
-#     host="localhost",
-#     user="root",
-#     password="0000",
-#     database="sa"
-# )
+import mysql.connector
 
-db = db_info.db_info()
+class SQL:
+    def __init__(self):
+        self.db = db_info.db_info()
 
-def select(sql) :
-    cursor = db.cursor(dictionary=True)
-    cursor.execute(sql)
-    data = cursor.fetchall()
-    cursor.close()
+    def select(self, sql):
+        cursor = self.db.cursor(dictionary=True)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        cursor.close()
+        return data
+
+    def insert(self, sql):
+        cursor = self.db.cursor(dictionary=True)
+        cursor.execute(sql)
+        self.db.commit()
+        cursor.close()
+
+    def update(self, sql):
+        self.insert(sql)
+
+    def close(self):
+        self.db.close()
+
+sql = SQL()
+
+@app.get("/community/article")
+def read_all_article():
+    data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE is_delete = 0")
+    
     return data
 
-def insert(sql) :
-	cursor = db.cursor(dictionary=True)
-	cursor.execute(sql)
-	db.commit()
-	cursor.close()
+@app.post("/community/article/{article_id}")
+async def upload_article(article_id: int, request: Request):
+    data = await request.json()
+    name = data.get("name")
+    title = data.get("title")
+    content = data.get("content")
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-update = insert
+    try :
+        sql.insert(f"INSERT INTO board (idx, name, title, content, date) VALUES ({article_id}, '{name}', '{title}', '{content}', '{current_time}')")
+        return {"result" : "success"}
+    except : 
+        return {"result" : "fail"}
 
-@app.get("/")
-def index(request: Request) :
-	data_list = select("SELECT * FROM board WHERE is_delete = 0 ORDER BY date desc")
-	# return data_list
-	return templates.TemplateResponse('./noticeboard/index.html', context={"request":request, "data_list":data_list})
+@app.get("/community/article/{article_id}")
+def read_article(article_id: int):
+    data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
+    is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
+    if data == [] :
+        return {"result" : "none data"}
+    elif is_delete != [] :
+        return {"result" : "delete data"}
+    else :
+        return data[0]
 
-@app.get("/write")
-def write(request: Request) :
-	return templates.TemplateResponse('./noticeboard/write.html', context={"request":request})
+@app.put("/community/article/{article_id}")
+def update_article(article_id: int, request: Request):
+    title = request.query_params.get("title")
+    content = request.query_params.get("content")
 
-@app.get("/check_write")
-def check_write(request: Request):
-    # Request 객체에서 쿼리 매개변수 가져오기
-	name = request.query_params.get("name")
-	title = request.query_params.get("title")
-	content = request.query_params.get("content")
-	current_time = datetime.now()
+    if title is None and content is None:
+        return {"result": "fail"}
+    elif content is None:
+        sql.update(f"UPDATE board SET title = '{title}' WHERE idx = {article_id}")
+    elif title is None:
+        sql.update(f"UPDATE board SET content = '{content}' WHERE idx = {article_id}")
+    else:
+        sql.update(f"UPDATE board SET title = '{title}', content = '{content}' WHERE idx = {article_id}")
 
-	insert(f"INSERT INTO board (name, title, content, date) VALUES ('{name}', '{title}', '{content}', '{current_time}')")
-	return RedirectResponse(url="/")
+    return {"result": "success"}
 
-@app.get("/read")
-def read(request: Request):
-	idx = request.query_params.get("idx")
-	data = select(f"SELECT * FROM board WHERE idx={idx}")
-	data = data[0]
-	update(f"UPDATE board SET hit = hit+1 WHERE idx = {idx}")
+@app.delete("/community/article/{article_id}")
+def delete_article(article_id: int):
+    data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
+    is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
 
-	reply_list = select(f"SELECT * FROM reply WHERE bidx={idx}")
-	
-	return templates.TemplateResponse('./noticeboard/read.html', context={"request":request,
-																"idx" : data['idx'], "name" : data['name'], "title" : data['title'],"content" : data['content'], "date" : data['date'], "hit" : data['hit'],
-																"reply_list" : reply_list})
+    if data == [] :
+        return {"result" : "none data"}
+    elif is_delete != [] :
+        return {"result" : "already delete"}
+    else :
+        sql.update(f"UPDATE board SET is_delete = 1 WHERE idx = {article_id}")
+        return {"result" : "success"}
 
-@app.get("/delete")
-def delete(request: Request):
-	idx = request.query_params.get("idx")
-	update(f"UPDATE board SET is_delete = 1 WHERE idx = {idx}")
-	return RedirectResponse(url="/")
+@app.get("/community/article/user/{user_id}")
+def read_user_article(user_id: str):
+    try : 
+        data = sql.select(f"SELECT title, content, date FROM board WHERE name={user_id} AND is_delete = 0")
+        return data
+    except : 
+        return {"result" : "fail"}
 
-@app.get("/reply")
-def delete(request: Request):
-	idx = request.query_params.get("idx")
-	name = request.query_params.get("name")
-	content = request.query_params.get("content")
-	current_time = datetime.now()
+@app.get("/community/article/search/{keyword}")
+def search_article(keyword: str):
+    data = sql.select(f"SELECT name, title, content, date FROM board WHERE title LIKE '%{keyword}%' OR content LIKE '%{keyword}%'")
+    
+    if data != [] :
+        return data
+    else :
+        return {"result" : "not found"}
+        
+@app.get("/community/article/{article_id}/comment")
+async def reply(article_id: int, request: Request) :
+    data = await request.json()
+    name = data.get("name")
+    content = data.get("content")
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if name is None or content is None :
+        return {"result" : "fail"}
+    else :
+        sql.insert(f"INSERT INTO reply (bidx, name, content, date) VALUES({article_id}, '{name}', '{content}', '{current_time}')")
+        data = sql.select(f"SELECT idx FROM reply WHERE date = '{current_time}'")
+        return data[0]
 
-	insert(f"INSERT INTO reply (bidx, name, content, date) VALUES({idx}, '{name}', '{content}', '{current_time}')")
-	return RedirectResponse(url="/read?idx=" + idx)
+@app.get("/community/article/{article_id}/comment")
+def read_reply(article_id: int) :
+    data = sql.select(f"SELECT idx, name, content, date FROM reply WHERE bidx = '{article_id}'")
+
+    if data == [] :
+        return {"result" : "fail"}
+    else :
+        return data
+
+@app.get("/community/article/{article_id}/comment/{comment_id}")
+def delete_reply(article_id: int, comment_id: int) :
+    sql.update(f"UPDATE reply SET is_delete = 1 WHERE bidx = {article_id} AND idx = {comment_id}")
+    data = sql.select(f"SELECT * FROM reply WHERE bidx = {article_id} AND idx = {comment_id} AND is_delete=1")
+
+    if data == [] :
+        return {"result" : "fail"}
+    else :   
+        return {"result" : "success"}
