@@ -35,13 +35,13 @@ class SQL:
 
 sql = SQL()
 
-@app.get("/community/article")
+@app.get("/article")
 def read_all_article():
     data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE is_delete = 0")
     
     return data
 
-@app.post("/community/article/{article_id}")
+@app.post("/article/{article_id}")
 async def upload_article(article_id: int, request: Request):
     data = await request.json()
     name = data.get("name")
@@ -55,7 +55,7 @@ async def upload_article(article_id: int, request: Request):
     except : 
         return {"result" : "fail"}
 
-@app.get("/community/article/{article_id}")
+@app.get("/article/{article_id}")
 def read_article(article_id: int):
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
@@ -66,7 +66,7 @@ def read_article(article_id: int):
     else :
         return data[0]
 
-@app.put("/community/article/{article_id}")
+@app.put("/article/{article_id}")
 def update_article(article_id: int, request: Request):
     title = request.query_params.get("title")
     content = request.query_params.get("content")
@@ -82,7 +82,7 @@ def update_article(article_id: int, request: Request):
 
     return {"result": "success"}
 
-@app.delete("/community/article/{article_id}")
+@app.delete("/article/{article_id}")
 def delete_article(article_id: int):
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
@@ -95,7 +95,7 @@ def delete_article(article_id: int):
         sql.update(f"UPDATE board SET is_delete = 1 WHERE idx = {article_id}")
         return {"result" : "success"}
 
-@app.get("/community/article/user/{user_id}")
+@app.get("/article/user/{user_id}")
 def read_user_article(user_id: str):
     try : 
         data = sql.select(f"SELECT title, content, date FROM board WHERE name={user_id} AND is_delete = 0")
@@ -103,7 +103,7 @@ def read_user_article(user_id: str):
     except : 
         return {"result" : "fail"}
 
-@app.get("/community/article/search/{keyword}")
+@app.get("/article/search/{keyword}")
 def search_article(keyword: str):
     data = sql.select(f"SELECT name, title, content, date FROM board WHERE title LIKE '%{keyword}%' OR content LIKE '%{keyword}%'")
     
@@ -112,7 +112,7 @@ def search_article(keyword: str):
     else :
         return {"result" : "not found"}
         
-@app.get("/community/article/{article_id}/comment")
+@app.get("/article/{article_id}/comment")
 async def reply(article_id: int, request: Request) :
     data = await request.json()
     name = data.get("name")
@@ -126,7 +126,7 @@ async def reply(article_id: int, request: Request) :
         data = sql.select(f"SELECT idx FROM reply WHERE date = '{current_time}'")
         return data[0]
 
-@app.get("/community/article/{article_id}/comment")
+@app.get("/article/{article_id}/comment")
 def read_reply(article_id: int) :
     data = sql.select(f"SELECT idx, name, content, date FROM reply WHERE bidx = '{article_id}'")
 
@@ -135,7 +135,7 @@ def read_reply(article_id: int) :
     else :
         return data
 
-@app.get("/community/article/{article_id}/comment/{comment_id}")
+@app.get("/article/{article_id}/comment/{comment_id}")
 def delete_reply(article_id: int, comment_id: int) :
     sql.update(f"UPDATE reply SET is_delete = 1 WHERE bidx = {article_id} AND idx = {comment_id}")
     data = sql.select(f"SELECT * FROM reply WHERE bidx = {article_id} AND idx = {comment_id} AND is_delete=1")
