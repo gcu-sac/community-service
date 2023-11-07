@@ -1,2 +1,6 @@
 fastapi[all]
 mysql-connector-python
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-exporter-otlp
