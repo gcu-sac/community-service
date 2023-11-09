@@ -1,43 +1,18 @@
-
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from datetime import datetime
-import db_info
+from db_info import SQL
+from db_info import get_db
+
 router = APIRouter()
 
-class SQL:
-    def __init__(self):
-        self.db = db_info.db_info()
-
-    def select(self, sql):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(sql)
-        data = cursor.fetchall()
-        cursor.close()
-        return data
-
-    def insert(self, sql):
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(sql)
-        self.db.commit()
-        cursor.close()
-
-    def update(self, sql):
-        self.insert(sql)
-
-    def close(self):
-        self.db.close()
-
-sql = SQL()
-
-
 @router.get("/article")
-def read_all_article():
+def read_all_article(sql: SQL= Depends(get_db)):
     data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE is_delete = 0")
     
     return data
 
 @router.post("/article/{article_id}")
-async def upload_article(article_id: int, request: Request):
+async def upload_article(article_id: int, request: Request, sql: SQL= Depends(get_db)):
     data = await request.json()
     name = data.get("name")
     title = data.get("title")
@@ -51,7 +26,7 @@ async def upload_article(article_id: int, request: Request):
         return {"result" : "fail"}
 
 @router.get("/article/{article_id}")
-def read_article(article_id: int):
+def read_article(article_id: int, sql: SQL= Depends(get_db)):
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
     if data == [] :
@@ -62,7 +37,7 @@ def read_article(article_id: int):
         return data[0]
 
 @router.put("/article/{article_id}")
-def update_article(article_id: int, request: Request):
+def update_article(article_id: int, request: Request, sql: SQL= Depends(get_db)):
     title = request.query_params.get("title")
     content = request.query_params.get("content")
 
@@ -78,7 +53,7 @@ def update_article(article_id: int, request: Request):
     return {"result": "success"}
 
 @router.delete("/article/{article_id}")
-def delete_article(article_id: int):
+def delete_article(article_id: int, sql: SQL= Depends(get_db)):
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
 
@@ -91,7 +66,7 @@ def delete_article(article_id: int):
         return {"result" : "success"}
 
 @router.get("/article/user/{user_id}")
-def read_user_article(user_id: str):
+def read_user_article(user_id: str, sql: SQL= Depends(get_db)):
     try : 
         data = sql.select(f"SELECT title, content, date FROM board WHERE name={user_id} AND is_delete = 0")
         return data
@@ -99,7 +74,7 @@ def read_user_article(user_id: str):
         return {"result" : "fail"}
 
 @router.get("/article/search/{keyword}")
-def search_article(keyword: str):
+def search_article(keyword: str, sql: SQL= Depends(get_db)):
     data = sql.select(f"SELECT name, title, content, date FROM board WHERE title LIKE '%{keyword}%' OR content LIKE '%{keyword}%'")
     
     if data != [] :
@@ -108,7 +83,7 @@ def search_article(keyword: str):
         return {"result" : "not found"}
         
 @router.get("/article/{article_id}/comment")
-async def reply(article_id: int, request: Request) :
+async def reply(article_id: int, request: Request, sql: SQL= Depends(get_db)) :
     data = await request.json()
     name = data.get("name")
     content = data.get("content")
@@ -122,7 +97,7 @@ async def reply(article_id: int, request: Request) :
         return data[0]
 
 @router.get("/article/{article_id}/comment")
-def read_reply(article_id: int) :
+def read_reply(article_id: int, sql: SQL= Depends(get_db)) :
     data = sql.select(f"SELECT idx, name, content, date FROM reply WHERE bidx = '{article_id}'")
 
     if data == [] :
@@ -131,7 +106,7 @@ def read_reply(article_id: int) :
         return data
 
 @router.get("/article/{article_id}/comment/{comment_id}")
-def delete_reply(article_id: int, comment_id: int) :
+def delete_reply(article_id: int, comment_id: int, sql: SQL= Depends(get_db)) :
     sql.update(f"UPDATE reply SET is_delete = 1 WHERE bidx = {article_id} AND idx = {comment_id}")
     data = sql.select(f"SELECT * FROM reply WHERE bidx = {article_id} AND idx = {comment_id} AND is_delete=1")
 

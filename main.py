@@ -8,6 +8,7 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from contextlib import asynccontextmanager
 from os import environ
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     endpoint = environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")

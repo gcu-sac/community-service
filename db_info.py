@@ -10,3 +10,35 @@ def db_info() :
         password=password,
         database="sac"
     )
+
+
+class SQL:
+    def __init__(self):
+        self.db = db_info()
+
+    def select(self, sql):
+        cursor = self.db.cursor(dictionary=True)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+        cursor.close()
+        return data
+
+    def insert(self, sql):
+        cursor = self.db.cursor(dictionary=True)
+        cursor.execute(sql)
+        self.db.commit()
+        cursor.close()
+
+    def update(self, sql):
+        self.insert(sql)
+
+    def close(self):
+        self.db.close()
+
+
+def get_db():
+    sql = SQL()
+    try:
+        yield sql
+    finally:
+        sql.close()
