@@ -3,6 +3,7 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (BatchSpanProcessor)
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from contextlib import asynccontextmanager
 from os import environ
@@ -33,3 +34,4 @@ resource = Resource(attributes={
 tracer = TracerProvider(resource=resource)
 
 FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer)
+HTTPXClientInstrumentor().instrument(tracer_provider=tracer)
