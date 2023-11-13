@@ -1,12 +1,12 @@
 from pydantic import BaseModel
-from typing import List, Optional
-
+from typing import List
+from datetime import datetime
 class Article(BaseModel):
     idx: int
     name: str
     title: str
     content: str
-    date: str
+    date: datetime
 
 class ReadAllArticleResponse(BaseModel):
     articles: List[Article]
