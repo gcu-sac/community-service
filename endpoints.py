@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Request, Depends
+from typing import Annotated
+from fastapi import APIRouter, Request, Depends, Cookie, HTTPException
 from datetime import datetime
 from db_info import SQL
 from db_info import get_db
+from authenticate import authenticate
 
 router = APIRouter()
 
@@ -12,7 +14,8 @@ def read_all_article(sql: SQL= Depends(get_db)):
     return data
 
 @router.post("/article/{article_id}")
-async def upload_article(article_id: int, request: Request, sql: SQL= Depends(get_db)):
+async def upload_article(article_id: int, request: Request, jwtAuthToken: Annotated[str | None, Cookie()] = None, sql: SQL= Depends(get_db)):
+    authenticate(jwtAuthToken)
     data = await request.json()
     name = data.get("name")
     title = data.get("title")
@@ -29,7 +32,7 @@ async def upload_article(article_id: int, request: Request, sql: SQL= Depends(ge
 def read_article(article_id: int, sql: SQL= Depends(get_db)):
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
-    if data == [] :
+    if data == []:
         return {"result" : "none data"}
     elif is_delete != [] :
         return {"result" : "delete data"}
@@ -37,10 +40,10 @@ def read_article(article_id: int, sql: SQL= Depends(get_db)):
         return data[0]
 
 @router.put("/article/{article_id}")
-def update_article(article_id: int, request: Request, sql: SQL= Depends(get_db)):
+def update_article(article_id: int, request: Request, jwtAuthToken: Annotated[str | None, Cookie()] = None, sql: SQL= Depends(get_db)):
+    authenticate(jwtAuthToken)
     title = request.query_params.get("title")
     content = request.query_params.get("content")
-
     if title is None and content is None:
         return {"result": "fail"}
     elif content is None:
@@ -53,7 +56,8 @@ def update_article(article_id: int, request: Request, sql: SQL= Depends(get_db))
     return {"result": "success"}
 
 @router.delete("/article/{article_id}")
-def delete_article(article_id: int, sql: SQL= Depends(get_db)):
+def delete_article(article_id: int, jwtAuthToken: Annotated[str | None, Cookie()] = None, sql: SQL= Depends(get_db)):
+    authenticate(jwtAuthToken)
     data = sql.select(f"SELECT * FROM board WHERE idx={article_id}")
     is_delete = sql.select(f"SELECT * FROM board WHERE idx={article_id} AND is_delete = 1")
 
@@ -82,8 +86,9 @@ def search_article(keyword: str, sql: SQL= Depends(get_db)):
     else :
         return {"result" : "not found"}
         
-@router.get("/article/{article_id}/comment")
-async def reply(article_id: int, request: Request, sql: SQL= Depends(get_db)) :
+@router.post("/article/{article_id}/comment")
+async def reply(article_id: int, request: Request, jwtAuthToken: Annotated[str | None, Cookie()] = None, sql: SQL= Depends(get_db)) :
+    authenticate(jwtAuthToken)
     data = await request.json()
     name = data.get("name")
     content = data.get("content")
