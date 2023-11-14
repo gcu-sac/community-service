@@ -4,16 +4,17 @@ from datetime import datetime
 
 class Article(BaseModel):
     idx: int
-    nick_name: str
+    name: str
     title: str
     content: str
     date: datetime
 
 class ReadAllArticleResponse(BaseModel):
     articles: List[Article]
+    count: int
 
 class UploadArticleRequest(BaseModel):
-    nick_name: str
+    name: str
     title: str
     content: str
 
