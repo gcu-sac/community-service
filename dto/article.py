@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Article(BaseModel):
     idx: int
-    name: str
+    nick_name: str
     title: str
     content: str
     date: datetime
@@ -13,7 +13,7 @@ class ReadAllArticleResponse(BaseModel):
     articles: List[Article]
 
 class UploadArticleRequest(BaseModel):
-    name: str
+    nick_name: str
     title: str
     content: str
 

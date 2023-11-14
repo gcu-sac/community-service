@@ -4,12 +4,12 @@ from datetime import datetime
 
 class Comment(BaseModel):
     idx: int
-    name: str
+    nick_name: str
     content: str
     date: datetime
 
 class UploadCommentRequest(BaseModel):
-    name: str
+    nick_name: str
     content: str
 
 class CommentList(BaseModel):

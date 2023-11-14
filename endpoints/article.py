@@ -55,10 +55,10 @@ async def delete_article(article_id: int, jwtAuthToken: Annotated[str | None, Co
     except:
         raise HTTPException(status_code=404, detail="Article not found")
 
-@router.get("/user/{user_id}", response_model=ReadAllArticleResponse)
-async def read_user_article(user_id: str, sql: SQL= Depends(get_db)):
+@router.get("/user/{nick_name}", response_model=ReadAllArticleResponse)
+async def read_user_article(nick_name: str, sql: SQL= Depends(get_db)):
     try:
-        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE name='{user_id}' AND is_delete = 0")
+        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE name='{nick_name}' AND is_delete = 0")
         return ReadAllArticleResponse(articles=[Article(**item) for item in data])
     except:
         raise HTTPException(status_code=404, detail="User not found")
