@@ -9,9 +9,9 @@ from dto.article import Article, ReadAllArticleResponse, UploadArticleRequest, U
 router = APIRouter(tags=["article"])
 
 @router.get("", response_model=ReadAllArticleResponse)
-async def read_all_article(page: int, sql: SQL= Depends(get_db)) -> ReadAllArticleResponse:
+async def read_all_article(sql: SQL= Depends(get_db)) -> ReadAllArticleResponse:
     try:
-        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE is_delete = 0 limit {(page-1) * 10}, 10")
+        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE is_delete = 0")
         count = sql.select(f"SELECT COUNT(*) FROM board WHERE is_delete = 0")
         return ReadAllArticleResponse(articles=[Article(**item) for item in data], count=count[0]["COUNT(*)"])
     except Exception as e:
@@ -57,16 +57,16 @@ async def delete_article(article_id: int, jwtAuthToken: Annotated[str | None, Co
         raise HTTPException(status_code=404, detail="Article not found")
 
 @router.get("/user/{nick_name}", response_model=ReadAllArticleResponse)
-async def read_user_article(nick_name: str, page: int, sql: SQL= Depends(get_db)):
+async def read_user_article(nick_name: str, sql: SQL= Depends(get_db)):
     try:
-        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE name='{nick_name}' AND is_delete = 0 LIMIT {(page-1) * 10}, 10")
+        data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE name='{nick_name}' AND is_delete = 0")
         count = sql.select(f"SELECT COUNT(*) FROM board WHERE name='{nick_name}' AND is_delete = 0")
         return ReadAllArticleResponse(articles=[Article(**item) for item in data], count=count[0]["COUNT(*)"])
     except:
         raise HTTPException(status_code=404, detail="User not found")
 
 @router.get("/search/{keyword}", response_model=ReadAllArticleResponse)
-async def search_article(keyword: str, page: int, sql: SQL= Depends(get_db)):
-    data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE title LIKE '%{keyword}%' OR content LIKE '%{keyword}%' LIMIT {(page-1) * 10}, 10")
+async def search_article(keyword: str, sql: SQL= Depends(get_db)):
+    data = sql.select(f"SELECT idx, name, title, content, date FROM board WHERE title LIKE is_delete = 0' AND (%{keyword}%' OR content LIKE '%{keyword}%')")
     count = sql.select(f"SELECT COUNT(*) FROM board WHERE title LIKE '%{keyword}%' OR content LIKE '%{keyword}%'")
     return ReadAllArticleResponse(articles=[Article(**item) for item in data], count=count[0]["COUNT(*)"])
