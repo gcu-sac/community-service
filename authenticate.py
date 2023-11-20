@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 async def authenticate(token: str | None) -> bool:
     async with httpx.AsyncClient() as client:
-        AUTH_URL = environ.get("AUTH_URL") or "https://sac.prod.cluster.yanychoi.com/api/auth"
+        AUTH_URL = environ.get("AUTH_URL") or "http://auth-service.auth-service.svc.cluster.local:8080/api/auth"
         try:
             headers = {"jwt-auth-token": token}
             print(token)
